@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import getMusics from '../services/musicsAPI';
-import { addSong } from '../services/favoriteSongsAPI';
+import { addSong, getFavoriteSongs, removeSong } from '../services/favoriteSongsAPI';
 import Load from '../components/Load';
 import MusicCard from '../components/MusicCard';
 import Header from '../components/Header';
@@ -16,6 +16,7 @@ class Album extends React.Component {
 
   componentDidMount() {
     this.result();
+    this.loadFavoriteList();
   }
 
   result = async () => {
@@ -26,16 +27,38 @@ class Album extends React.Component {
     });
   };
 
-  handleAddFavorite = async (target) => {
-    const { addFavorite, chosen } = this.state;
+  loadFavoriteList = async () => {
+    this.setState({
+      addFavorite: await getFavoriteSongs(),
+    });
+  };
+
+  tick = (music) => {
+    const { addFavorite } = this.state;
+    const validateFav = addFavorite.some((song) => music.trackId === song.trackId);
+    return validateFav;
+  };
+
+  handleAddFavorite = async (music) => {
+    const { addFavorite } = this.state;
+    const validateFav = addFavorite.some((song) => music.trackId === song.trackId);
+
     this.setState({
       load: true,
-      addFavorite: [addFavorite, target.value],
     });
-    await addSong(chosen);
-    this.setState({
-      load: false,
-    });
+    if (validateFav) {
+      await removeSong(music);
+      this.setState({
+        load: false,
+        addFavorite: await getFavoriteSongs(),
+      });
+    } else {
+      await addSong(music);
+      this.setState({
+        addFavorite: await getFavoriteSongs(),
+        load: false,
+      });
+    }
   };
 
   render() {
@@ -65,7 +88,8 @@ class Album extends React.Component {
                 <li key={ index }>
                   <MusicCard
                     sound={ music }
-                    handleAddFavorite={ this.handleAddFavorite }
+                    handleAddFavorite={ () => this.handleAddFavorite(music) }
+                    tick={ this.tick(music) }
                   />
                 </li>
               )
