@@ -1,12 +1,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import getMusics from '../services/musicsAPI';
+import { addSong } from '../services/favoriteSongsAPI';
+import Load from '../components/Load';
 import MusicCard from '../components/MusicCard';
 import Header from '../components/Header';
 
 class Album extends React.Component {
   state = {
     musicList: [],
+    load: false,
+    addFavorite: [],
 
   };
 
@@ -22,14 +26,32 @@ class Album extends React.Component {
     });
   };
 
+  handleAddFavorite = async (target) => {
+    const { addFavorite, chosen } = this.state;
+    this.setState({
+      load: true,
+      addFavorite: [addFavorite, target.value],
+    });
+    await addSong(chosen);
+    this.setState({
+      load: false,
+    });
+  };
+
   render() {
-    const { musicList } = this.state;
+    const { musicList, load } = this.state;
 
     return (
       <div
         data-testid="page-album"
       >
         <Header />
+        {
+          load
+            ? <Load />
+            : null
+        }
+
         <ul>
           {musicList.map((music, index) => (
             index === 0
@@ -41,7 +63,10 @@ class Album extends React.Component {
               )
               : (
                 <li key={ index }>
-                  <MusicCard sound={ music } />
+                  <MusicCard
+                    sound={ music }
+                    handleAddFavorite={ this.handleAddFavorite }
+                  />
                 </li>
               )
           ))}
